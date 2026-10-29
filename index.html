@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>말랑 벽돌깨기</title>
+<title>말랑 명화 벽돌깨기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
 </style>
 </head>
 <body>
-<canvas id="c" aria-label="말랑 벽돌깨기 게임 화면"></canvas>
+<canvas id="c" aria-label="말랑 명화 벽돌깨기 게임 화면"></canvas>
 <script>
 (() => {
 'use strict';
@@ -44,33 +44,68 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
+// ---------- artworks (public domain, via Wikimedia Commons) ----------
+const ARTS = [
+  {
+    id: 'starry', src: 'art/starry-night.jpg',
+    title: '별이 빛나는 밤', en: 'The Starry Night', artist: '빈센트 반 고흐', year: '1889',
+    place: '뉴욕 현대미술관(MoMA) 소장',
+    desc: '생레미 요양원 창밖의 풍경에 기억과 상상을 더해 그린 작품이에요. 소용돌이치는 붓질과 노랑·파랑의 강렬한 대비가 돋보이는 후기 인상주의의 대표작이랍니다.',
+    hints: ['19세기 후반, 네덜란드 출신 화가의 작품이에요.', '소용돌이치는 밤하늘과 불꽃 같은 사이프러스 나무가 보여요.', '이 화가는 「해바라기」와 여러 점의 자화상으로도 유명해요.'],
+  },
+  {
+    id: 'wave', src: 'art/great-wave.jpg',
+    title: '가나가와 해변의 높은 파도 아래', en: 'The Great Wave off Kanagawa', artist: '가쓰시카 호쿠사이', year: '1831년경',
+    place: '목판화 연작 「후지산 36경」 중 한 점',
+    desc: '거대한 파도와 멀리 작게 보이는 후지산이 대비를 이루는 일본의 목판화(우키요에)예요. 고흐, 모네 같은 유럽 화가들에게도 큰 영향을 주었어요(자포니즘).',
+    hints: ['19세기 일본에서 만들어진 목판화(우키요에)예요.', '파도 너머 멀리 작은 산 하나가 숨어 있어요.', '유럽 인상주의 화가들이 이 나라의 판화에 푹 빠졌었대요.'],
+  },
+  {
+    id: 'monet', src: 'art/impression-sunrise.jpg',
+    title: '인상, 해돋이', en: 'Impression, Sunrise', artist: '클로드 모네', year: '1872',
+    place: '파리 마르모탕 모네 미술관 소장',
+    desc: '프랑스 르아브르 항구의 아침 안개와 떠오르는 해를 빠른 붓질로 담았어요. 이 그림의 제목에서 「인상주의」라는 이름이 생겨났답니다.',
+    hints: ['19세기 프랑스 화가의 작품이에요.', '안개 낀 항구 위로 주황빛 해가 떠올라요.', '이 작품의 제목에서 한 미술 사조의 이름이 나왔어요.'],
+  },
+];
+for (const a of ARTS) { a.img = new Image(); a.img.src = a.src; }
+const fixedArt = ARTS.findIndex(a => a.id === new URLSearchParams(location.search).get('art'));
+
 // ---------- data ----------
 const COLORS = {
-  a: ['#ffb3c7', '#ef7d9d'], b: ['#ffd1a3', '#eea05d'], c: ['#fff0a0', '#e2bb3a'],
-  d: ['#b9f0c9', '#5cc185'], e: ['#b5dcff', '#5ea6e6'], f: ['#d6c4ff', '#9a7ce6'],
+  a: ['#ff8fa3', '#e0566f'], b: ['#ffb36b', '#e07f2c'], c: ['#ffe066', '#d6a91c'],
+  d: ['#8fdc8f', '#45a85a'], e: ['#7cc4ff', '#3a8fd6'], f: ['#c5a3ff', '#8a63db'],
 };
-// lowercase = 1 hit, UPPERCASE = 2 hits (frosted cake brick)
+// lowercase = 1 hit, UPPERCASE = 2 hits (gold-cap tube)
 const LEVELS = [
-  ['aabbccdd', 'aabbccdd', 'eeffaabb', 'eeffaabb'],
+  ['aabbccdd', 'eeffaabb', 'ccddeeff'],
+  ['abcdefab', 'bcdefabc', 'cdefabcd', 'defabcde'],
   ['.AA..AA.', 'AaaAAaaA', 'AaaaaaaA', '.AaaaaA.', '..AaaA..', '...AA...'],
   ['cccccccc', 'D.D.D.D.', 'eeeeeeee', '.F.F.F.F', 'aaaaaaaa', 'bbbbbbbb'],
   ['b......b', 'bb....bb', 'bbbbbbbb', 'bEbbbbEb', 'bbbAAbbb', 'bbbbbbbb', '.bbbbbb.'],
+  ['..AAAA..', '.abbbba.', 'ab.bb.ba', 'abbbbbba', 'abA..Aba', '.abAAba.', '..aaaa..'],
+  ['a.b.c.d.', '.e.f.a.b', 'c.d.e.f.', '.A.B.C.D', 'e.f.a.b.', '.c.d.e.f'],
   ['...AA...', '..bbbb..', '.cccccc.', 'dddddddd', 'EEEEEEEE', 'ffffffff', 'AAAAAAAA'],
+  ['...AA...', '..BccB..', '.CddddC.', 'DeeEEeeD', '.FffffF.', '..AaaA..', '...BB...'],
+  ['ABCDEFAB', 'abcdefab', 'CDEFABCD', 'cdefabcd', 'EFABCDEF', 'efabcdef', 'ABCDEFAB'],
 ];
+const ROUNDS = LEVELS.length;
 const BW = (W - 40 - 7 * 6) / 8, BH = 26, TOP = 96;
 const PUPS = {
   life:  { col: '#ff7a9c', icon: '♥', msg: '생명 +1!' },
-  wide:  { col: '#6fb8ff', icon: '↔', msg: '쭈욱~ 넓어졌다!' },
-  multi: { col: '#b48cff', icon: '+2', msg: '공이 늘었다!' },
+  wide:  { col: '#6fb8ff', icon: '↔', msg: '팔레트가 넓어졌다!' },
+  multi: { col: '#b48cff', icon: '+2', msg: '붓이 늘었다!' },
   slow:  { col: '#5fd09a', icon: '~', msg: '천천히~' },
 };
 
 // ---------- state ----------
-let state = 'title', score = 0, lives = 3, level = 0, combo = 0, shake = 0;
+let state = 'title', score = 0, lives = 3, level = 0, combo = 0, shake = 0, levelStartScore = 0;
 let best = 0;
-try { best = +localStorage.getItem('mallang-best') || 0; } catch (e) {}
-let bricks = [], balls = [], pups = [], parts = [], pops = [];
-let wideT = 0, slowT = 0, time = 0;
+try { best = +localStorage.getItem('mallang-art-best') || 0; } catch (e) {}
+let bricks = [], balls = [], pups = [], parts = [], pops = [], splats = [], btns = [];
+let wideT = 0, slowT = 0, time = 0, clearAt = 0;
+let artIdx = -1, order = [];
+const art = () => ARTS[Math.max(0, artIdx)];
 const paddle = { x: W / 2, y: H - 70, w: 96, tw: 96, h: 18, sq: 0 };
 let tx = W / 2;
 const bubbles = Array.from({ length: 14 }, () => ({
@@ -79,35 +114,43 @@ const bubbles = Array.from({ length: 14 }, () => ({
 }));
 
 function buildLevel(n) {
-  bricks = [];
+  bricks = []; splats = [];
+  levelStartScore = score;
   LEVELS[n].forEach((row, r) => [...row].forEach((ch, c) => {
     if (ch === '.') return;
     const k = ch.toLowerCase();
-    const hp = ch !== k ? 2 : 1;
     bricks.push({ x: 20 + c * (BW + 6), y: TOP + r * (BH + 8), w: BW, h: BH, col: COLORS[k],
-      hp, wob: 0, blink: Math.random() * 4, dead: false });
+      hp: ch !== k ? 2 : 1, wob: 0, blink: Math.random() * 4, dead: false });
   }));
 }
 function resetPowers() { wideT = 0; slowT = 0; paddle.tw = 96; }
 function resetBall() {
-  balls = [{ x: paddle.x, y: paddle.y - paddle.h / 2 - R - 1, vx: 0, vy: 0, stuck: true, trail: [] }];
+  balls = [{ x: paddle.x, y: paddle.y - paddle.h / 2 - R - 1, vx: 0, vy: 0, stuck: true, trail: [], col: COLORS.e }];
   combo = 0;
 }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function startGame() {
+  if (fixedArt >= 0) artIdx = fixedArt;
+  else { let n; do { n = Math.floor(Math.random() * ARTS.length); } while (n === artIdx); artIdx = n; }
+  order = shuffle([...Array(ROUNDS).keys()]);
   score = 0; lives = 3; level = 0;
   pups = []; resetPowers(); buildLevel(0); resetBall();
   state = 'play';
 }
+function retryLevel() {
+  score = levelStartScore; lives = 3;
+  pups = []; resetPowers(); buildLevel(level); resetBall();
+  state = 'play';
+}
 function nextLevel() {
   level++;
-  if (level >= LEVELS.length) { state = 'win'; saveBest(); confetti(80); sfx('clear'); return; }
   pups = []; resetPowers(); buildLevel(level); resetBall();
   state = 'play';
 }
 function saveBest() {
-  if (score > best) { best = score; try { localStorage.setItem('mallang-best', best); } catch (e) {} }
+  if (score > best) { best = score; try { localStorage.setItem('mallang-art-best', best); } catch (e) {} }
 }
-const curSpeed = () => (330 + level * 25) * (slowT > 0 ? .7 : 1);
+const curSpeed = () => (330 + level * 14) * (slowT > 0 ? .7 : 1);
 
 function launch() {
   const sp = curSpeed();
@@ -141,7 +184,13 @@ function sfx(n) {
     case 'tough': tone(240, .1, 'square', .05, 180); break;
     case 'power': [660, 880, 1100].forEach((f, i) => tone(f, .1, 'triangle', .1, 0, i * .07)); break;
     case 'lose': tone(420, .45, 'triangle', .14, 140); break;
-    case 'clear': [523, 659, 784, 1047].forEach((f, i) => tone(f, .18, 'triangle', .12, 0, i * .11)); break;
+    case 'clear':
+      [523, 659, 784, 1047].forEach((f, i) => tone(f, .18, 'triangle', .12, 0, i * .11));
+      [1568, 2093].forEach((f, i) => tone(f, .25, 'sine', .06, 0, .6 + i * .1));
+      break;
+    case 'win':
+      [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, .22, 'triangle', .12, 0, i * .12));
+      break;
     case 'over': [392, 330, 262].forEach((f, i) => tone(f, .28, 'triangle', .12, 0, i * .2)); break;
   }
 }
@@ -151,29 +200,39 @@ function burst(x, y, col, n = 10) {
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * 180;
     parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 80, life: 0, max: .6 + Math.random() * .5,
-      col, shape: ['heart', 'star', 'dot'][i % 3], size: 4 + Math.random() * 4, rot: Math.random() * 6, vr: (Math.random() - .5) * 8 });
+      col, shape: ['drop', 'star', 'dot'][i % 3], size: 4 + Math.random() * 4, rot: Math.random() * 6, vr: (Math.random() - .5) * 8 });
   }
 }
+function splat(x, y, col) {
+  const blobs = Array.from({ length: 7 }, (_, i) => {
+    const a = Math.random() * Math.PI * 2, d = i === 0 ? 0 : 8 + Math.random() * 14;
+    return { dx: Math.cos(a) * d, dy: Math.sin(a) * d, r: i === 0 ? 11 + Math.random() * 4 : 2 + Math.random() * 4 };
+  });
+  splats.push({ x, y, col, blobs, life: 0 });
+  if (splats.length > 40) splats.shift();
+}
 function confetti(n) {
-  const cols = Object.values(COLORS).map(c => c[1]);
+  const cols = Object.values(COLORS).map(c => c[0]);
   for (let i = 0; i < n; i++) {
-    parts.push({ x: Math.random() * W, y: HUD - 10, vx: (Math.random() - .5) * 120, vy: Math.random() * 120, life: 0,
-      max: 1.6 + Math.random(), col: cols[i % cols.length], shape: ['heart', 'star', 'dot'][i % 3],
+    parts.push({ x: Math.random() * W, y: -10, vx: (Math.random() - .5) * 120, vy: Math.random() * 120, life: 0,
+      max: 1.8 + Math.random(), col: cols[i % cols.length], shape: ['drop', 'star', 'dot'][i % 3],
       size: 5 + Math.random() * 4, rot: Math.random() * 6, vr: (Math.random() - .5) * 8 });
   }
 }
 function popText(x, y, s, col = '#ff6f98') { pops.push({ x, y, s, col, life: 0 }); }
 
 // ---------- physics ----------
-function damage(k) {
+function damage(k, b) {
   k.hp--; k.wob = 1;
-  if (k.hp > 0) { score += 5; sfx('tough'); burst(k.x + k.w / 2, k.y + k.h / 2, '#ffffff', 5); return; }
+  b.col = k.col;
+  if (k.hp > 0) { score += 5; sfx('tough'); burst(k.x + k.w / 2, k.y + k.h / 2, '#ffd36b', 5); return; }
   k.dead = true; combo++;
   const pts = 10 + (combo - 1) * 5;
   score += pts;
   sfx('pop');
   shake = Math.min(shake + 2, 6);
-  burst(k.x + k.w / 2, k.y + k.h / 2, k.col[1], 12);
+  burst(k.x + k.w / 2, k.y + k.h / 2, k.col[0], 12);
+  splat(k.x + k.w / 2, k.y + k.h / 2, k.col[0]);
   popText(k.x + k.w / 2, k.y, '+' + pts + (combo > 2 ? ` ${combo}콤보!` : ''));
   if (Math.random() < .17) {
     const types = Object.keys(PUPS);
@@ -189,7 +248,7 @@ function hitBrick(b, k) {
   const oy = above ? b.y + R - k.y : k.y + k.h - (b.y - R);
   if (ox < oy) { b.vx = left ? -Math.abs(b.vx) : Math.abs(b.vx); b.x += left ? -ox : ox; }
   else { b.vy = above ? -Math.abs(b.vy) : Math.abs(b.vy); b.y += above ? -oy : oy; }
-  damage(k);
+  damage(k, b);
   return true;
 }
 function updBall(b, dt) {
@@ -226,7 +285,7 @@ function applyPup(type, x, y) {
     const sp = curSpeed(), base = Math.atan2(src.vx, -src.vy);
     for (const d of [-.45, .45]) {
       const a = Math.max(-1.05, Math.min(1.05, base + d));
-      balls.push({ x: src.x, y: src.y, vx: sp * Math.sin(a), vy: -sp * Math.cos(a), stuck: false, trail: [] });
+      balls.push({ x: src.x, y: src.y, vx: sp * Math.sin(a), vy: -sp * Math.cos(a), stuck: false, trail: [], col: src.col });
     }
   }
 }
@@ -240,6 +299,8 @@ function update(dt) {
   parts = parts.filter(p => p.life < p.max);
   for (const p of pops) { p.life += dt; p.y -= 40 * dt; }
   pops = pops.filter(p => p.life < .9);
+  for (const s of splats) s.life += dt;
+  splats = splats.filter(s => s.life < 5);
   shake = Math.max(0, shake - dt * 25);
   for (const k of bricks) { k.wob = Math.max(0, k.wob - dt * 3); k.blink += dt; }
   paddle.sq = Math.max(0, paddle.sq - dt * 5);
@@ -256,7 +317,7 @@ function update(dt) {
   for (const b of balls) {
     updBall(b, dt);
     b.trail.push({ x: b.x, y: b.y });
-    if (b.trail.length > 8) b.trail.shift();
+    if (b.trail.length > 12) b.trail.shift();
   }
   balls = balls.filter(b => !b.lost);
 
@@ -275,8 +336,9 @@ function update(dt) {
     else resetBall();
   }
   if (state === 'play' && bricks.every(k => k.dead)) {
-    state = 'clear'; pups = []; sfx('clear'); confetti(50);
-    score += 100; popText(W / 2, H / 2 + 70, '보너스 +100', '#ff8fb0');
+    pups = []; score += 100; clearAt = time; saveBest();
+    if (level === ROUNDS - 1) { state = 'win'; confetti(120); sfx('win'); }
+    else { state = 'clear'; confetti(50); sfx('clear'); }
   }
 }
 
@@ -302,10 +364,27 @@ function starPath(x, y, r) {
   }
   ctx.closePath();
 }
+function dropPath(x, y, s) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - s * 1.3);
+  ctx.bezierCurveTo(x + s * .9, y - s * .2, x + s, y + s, x, y + s);
+  ctx.bezierCurveTo(x - s, y + s, x - s * .9, y - s * .2, x, y - s * 1.3);
+  ctx.closePath();
+}
 function text(s, x, y, size, col, align = 'center', outline = null) {
   ctx.font = `${size}px ${FONT}`; ctx.textAlign = align; ctx.textBaseline = 'middle';
   if (outline) { ctx.lineWidth = size / 5; ctx.strokeStyle = outline; ctx.lineJoin = 'round'; ctx.strokeText(s, x, y); }
   ctx.fillStyle = col; ctx.fillText(s, x, y);
+}
+function wrap(s, maxW, size) {
+  ctx.font = `${size}px ${FONT}`;
+  const lines = []; let line = '';
+  for (const word of s.split(' ')) {
+    const t = line ? line + ' ' + word : word;
+    if (line && ctx.measureText(t).width > maxW) { lines.push(line); line = word; } else line = t;
+  }
+  if (line) lines.push(line);
+  return lines;
 }
 function face(x, y, mood, blink, scale = 1) {
   ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
@@ -342,68 +421,96 @@ function drawBg() {
     if (b.heart) { ctx.fillStyle = '#ffd6e5'; heartPath(x, b.y, b.r * .7); ctx.fill(); }
     else { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, b.y, b.r, 0, 7); ctx.fill(); }
   }
+  for (const s of splats) {
+    ctx.globalAlpha = .4 * Math.min(1, (5 - s.life) / 1.5);
+    ctx.fillStyle = s.col;
+    ctx.beginPath();
+    for (const o of s.blobs) { ctx.moveTo(s.x + o.dx + o.r, s.y + o.dy); ctx.arc(s.x + o.dx, s.y + o.dy, o.r, 0, 7); }
+    ctx.fill();
+  }
   ctx.globalAlpha = 1;
 }
+function tubePath(x, y, w, h) {
+  ctx.beginPath();
+  ctx.moveTo(x + 7, y + 1); ctx.lineTo(x + w - 15, y + 1);
+  ctx.quadraticCurveTo(x + w - 9, y + 2, x + w - 9, y + h / 2 - 5);
+  ctx.lineTo(x + w - 9, y + h / 2 + 5);
+  ctx.quadraticCurveTo(x + w - 9, y + h - 2, x + w - 15, y + h - 1);
+  ctx.lineTo(x + 7, y + h - 1); ctx.closePath();
+}
+// a paint-tube brick
 function drawBrick(k) {
   const s = 1 + Math.sin(k.wob * 14) * .1 * k.wob;
   ctx.save();
   ctx.translate(k.x + k.w / 2, k.y + k.h / 2); ctx.scale(s, 2 - s);
-  const x = -k.w / 2, y = -k.h / 2;
-  ctx.fillStyle = 'rgba(170,110,150,.16)'; rr(x, y + 3, k.w, k.h, 10); ctx.fill();
-  ctx.fillStyle = k.col[0]; rr(x, y, k.w, k.h, 10); ctx.fill();
-  if (k.hp > 1) {
-    ctx.save(); rr(x, y, k.w, k.h, 10); ctx.clip();
-    ctx.fillStyle = '#fffafc';
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + k.w, y); ctx.lineTo(x + k.w, y + 7);
-    for (let i = 4; i >= 0; i--) {
-      const cx = x + (i + .5) * k.w / 5;
-      ctx.quadraticCurveTo(cx + k.w / 10, y + 7, cx, y + (i % 2 ? 12 : 9));
-      ctx.quadraticCurveTo(cx - k.w / 10, y + 7, cx - k.w / 10, y + 7);
-    }
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = k.col[1];
-    for (let i = 0; i < 4; i++) { ctx.fillRect(x + 8 + i * 11, y + 3, 3, 1.6); }
-    ctx.restore();
-  } else {
-    ctx.fillStyle = 'rgba(255,255,255,.55)'; rr(x + 6, y + 3, k.w - 12, 5, 3); ctx.fill();
+  const w = k.w, h = k.h, x = -w / 2, y = -h / 2, gold = k.hp > 1;
+  ctx.fillStyle = 'rgba(170,110,150,.16)'; tubePath(x, y + 3, w, h); ctx.fill();
+  ctx.fillStyle = k.col[0]; tubePath(x, y, w, h); ctx.fill();
+  ctx.strokeStyle = k.col[1]; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.5)'; rr(x + 10, y + 3.5, w - 28, 3.5, 2); ctx.fill();
+  // crimped tail
+  ctx.fillStyle = '#eef0f5'; ctx.strokeStyle = '#b8bdca'; ctx.lineWidth = 1.5;
+  rr(x, y + 1, 8, h - 2, 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + 3, y + 5); ctx.lineTo(x + 3, y + h - 5); ctx.moveTo(x + 5.5, y + 5); ctx.lineTo(x + 5.5, y + h - 5); ctx.stroke();
+  // cap
+  ctx.fillStyle = gold ? '#ffd36b' : k.col[1]; ctx.strokeStyle = gold ? '#d9a032' : 'rgba(0,0,0,.15)';
+  rr(x + w - 10, y + h / 2 - 6.5, 10, 13, 3); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x + w - 7, y + h / 2 - 4); ctx.lineTo(x + w - 7, y + h / 2 + 4); ctx.moveTo(x + w - 4, y + h / 2 - 4); ctx.lineTo(x + w - 4, y + h / 2 + 4); ctx.stroke();
+  // label with face
+  ctx.fillStyle = 'rgba(255,255,255,.9)'; rr(-12, y + 5, 22, h - 10, 4); ctx.fill();
+  if (gold) { ctx.strokeStyle = '#e6b84a'; ctx.lineWidth = 1.5; ctx.stroke(); }
+  face(-1, 2, k.wob > .35 ? 'ouch' : 'idle', (k.blink % 4) < .13, .6);
+  if (gold) {
+    ctx.fillStyle = '#fff';
+    starPath(x + 13, y + 8, 3.5 + Math.sin(time * 5 + k.x) * .8); ctx.fill();
+    starPath(x + w - 17, y + h - 7, 2.5); ctx.fill();
   }
-  ctx.lineWidth = 2; ctx.strokeStyle = k.col[1]; rr(x, y, k.w, k.h, 10); ctx.stroke();
-  face(0, 3, k.wob > .35 ? 'ouch' : 'idle', (k.blink % 4) < .13, .82);
   ctx.restore();
 }
+// an artist's palette paddle
 function drawPaddle() {
   const p = paddle, sx = 1 + p.sq * .1, sy = 1 - p.sq * .25;
   ctx.save(); ctx.translate(p.x, p.y); ctx.scale(sx, sy);
   const w = p.w, h = p.h;
-  for (const ex of [-w / 2 + 16, w / 2 - 16]) {
-    ctx.save(); ctx.translate(ex, -h / 2); ctx.rotate(ex < 0 ? -.25 : .25);
-    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#ee87a8'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.ellipse(0, -9, 5, 11, 0, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#ffc2d6'; ctx.beginPath(); ctx.ellipse(0, -9, 2.2, 7, 0, 0, 7); ctx.fill();
-    ctx.restore();
-  }
   ctx.fillStyle = 'rgba(170,110,150,.18)'; rr(-w / 2, -h / 2 + 4, w, h, h / 2); ctx.fill();
   const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-  g.addColorStop(0, '#ffc4d8'); g.addColorStop(1, '#ff97bb');
+  g.addColorStop(0, '#fbe8c4'); g.addColorStop(1, '#eecb8e');
   ctx.fillStyle = g; rr(-w / 2, -h / 2, w, h, h / 2); ctx.fill();
-  ctx.strokeStyle = '#e8739a'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,.6)'; rr(-w / 2 + 10, -h / 2 + 3, w - 20, 4, 2); ctx.fill();
-  face(0, 1, p.sq > .4 ? 'happy' : 'idle', (time % 3.5) < .12, .75);
+  ctx.strokeStyle = '#c99a5b'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#fff3f8'; ctx.beginPath(); ctx.ellipse(-w / 2 + 13, 1, 5, 4, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = '#c99a5b'; ctx.lineWidth = 1.5; ctx.stroke();
+  for (const [dx, c] of [[-w / 2 + 27, COLORS.a[0]], [w / 2 - 24, COLORS.c[0]], [w / 2 - 12, COLORS.e[0]]]) {
+    ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(dx, 0, 5, 4.2, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.arc(dx - 1.5, -1.5, 1.2, 0, 7); ctx.fill();
+  }
+  face(0, 0, p.sq > .4 ? 'happy' : 'idle', (time % 3.5) < .12, .7);
   ctx.restore();
 }
+// a paintbrush ball: the bristle tip is the hit circle
 function drawBall(b) {
-  b.trail.forEach((t, i) => {
-    ctx.globalAlpha = (i / b.trail.length) * .3;
-    ctx.fillStyle = '#ffd36b';
-    ctx.beginPath(); ctx.arc(t.x, t.y, R * (i / b.trail.length), 0, 7); ctx.fill();
-  });
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = '#fff4b0'; ctx.strokeStyle = '#efb44a'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, 7); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#5a3a4a';
-  ctx.beginPath(); ctx.arc(b.x - 2.8, b.y - .5, 1.2, 0, 7); ctx.arc(b.x + 2.8, b.y - .5, 1.2, 0, 7); ctx.fill();
-  ctx.fillStyle = 'rgba(255,120,150,.5)';
-  ctx.beginPath(); ctx.arc(b.x - 4.6, b.y + 2.2, 1.4, 0, 7); ctx.arc(b.x + 4.6, b.y + 2.2, 1.4, 0, 7); ctx.fill();
+  if (b.trail.length > 1) {
+    ctx.globalAlpha = .3; ctx.strokeStyle = b.col[0]; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = 7;
+    ctx.beginPath(); b.trail.forEach((t, i) => i ? ctx.lineTo(t.x, t.y) : ctx.moveTo(t.x, t.y)); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  const ang = b.stuck ? Math.PI / 2 : Math.atan2(b.vy, b.vx);
+  ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(ang + Math.PI);
+  // handle
+  ctx.fillStyle = '#e7a76c'; ctx.strokeStyle = '#b9773f'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(14, -4); ctx.lineTo(36, -2.6); ctx.arc(36, 0, 2.6, -Math.PI / 2, Math.PI / 2); ctx.lineTo(14, 4); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = b.col[0]; ctx.beginPath(); ctx.arc(36, 0, 2.6, -Math.PI / 2, Math.PI / 2); ctx.closePath(); ctx.fill();
+  // ferrule
+  ctx.fillStyle = '#dfe3ec'; ctx.strokeStyle = '#a6adbd';
+  rr(5, -5.5, 10, 11, 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(8.5, -5); ctx.lineTo(8.5, 5); ctx.moveTo(11.5, -5); ctx.lineTo(11.5, 5); ctx.stroke();
+  // bristles
+  ctx.fillStyle = b.col[0]; ctx.strokeStyle = b.col[1]; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.moveTo(-10, 0); ctx.quadraticCurveTo(-5, -8, 6, -6); ctx.lineTo(6, 6); ctx.quadraticCurveTo(-5, 8, -10, 0); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.ellipse(0, -2.8, 4, 1.4, -.15, 0, 7); ctx.fill();
+  ctx.restore();
 }
 function drawPup(u) {
   const P = PUPS[u.type], y = u.y + Math.sin(u.t * 6) * 2;
@@ -417,7 +524,7 @@ function drawParts() {
     ctx.globalAlpha = 1 - p.life / p.max;
     ctx.fillStyle = p.col;
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-    if (p.shape === 'heart') { heartPath(0, 0, p.size); ctx.fill(); }
+    if (p.shape === 'drop') { dropPath(0, 0, p.size * .8); ctx.fill(); }
     else if (p.shape === 'star') { starPath(0, 0, p.size); ctx.fill(); }
     else { ctx.beginPath(); ctx.arc(0, 0, p.size * .6, 0, 7); ctx.fill(); }
     ctx.restore();
@@ -431,14 +538,14 @@ function drawParts() {
 }
 const BTN = { mute: { x: W - 32, y: 32 }, pause: { x: W - 66, y: 32 } };
 function drawHud() {
-  ctx.fillStyle = 'rgba(255,255,255,.75)'; rr(10, 10, W - 20, 44, 18); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.78)'; rr(10, 10, W - 20, 44, 18); ctx.fill();
   ctx.strokeStyle = '#ffd0e0'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.fillStyle = '#ffc94d'; starPath(32, 32, 9); ctx.fill();
-  text(String(score), 48, 33, 22, '#6a4a5a', 'left');
-  text(`Lv.${level + 1}`, 190, 33, 20, '#9a7ce6');
+  ctx.fillStyle = '#ffc94d'; starPath(30, 32, 9); ctx.fill();
+  text(String(score), 45, 33, 21, '#6a4a5a', 'left');
+  text(`라운드 ${level + 1}/${ROUNDS}`, 175, 33, 18, '#8a63db');
   for (let i = 0; i < 5; i++) {
     ctx.fillStyle = i < lives ? '#ff7a9c' : '#f3dbe4';
-    heartPath(250 + i * 22, 34, 9); ctx.fill();
+    heartPath(252 + i * 22, 34, 9); ctx.fill();
   }
   for (const [k, b] of Object.entries(BTN)) {
     ctx.fillStyle = '#ffe3ee'; ctx.beginPath(); ctx.arc(b.x, b.y, 14, 0, 7); ctx.fill();
@@ -460,65 +567,130 @@ function drawHud() {
   if (wideT > 0) badge('넓게', wideT, PUPS.wide.col);
   if (slowT > 0) badge('느리게', slowT, PUPS.slow.col);
 }
-function card(h) {
-  ctx.fillStyle = 'rgba(255,240,246,.55)'; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = 'rgba(255,255,255,.94)'; rr(50, H / 2 - h / 2, W - 100, h, 28); ctx.fill();
+
+// painting split into 5 x 2 pieces; `shown` = revealed piece indices
+function paintingSize(maxW, maxH) {
+  const img = art().img, ar = img.naturalWidth ? img.naturalWidth / img.naturalHeight : 1.3;
+  let w = maxW, h = w / ar;
+  if (h > maxH) { h = maxH; w = h * ar; }
+  return { w, h };
+}
+function placeholder(x, y, w, h, i) {
+  ctx.fillStyle = i % 2 ? '#f7eef3' : '#efe6f6'; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.strokeRect(x + .75, y + .75, w - 1.5, h - 1.5);
+  text('?', x + w / 2, y + h / 2 + 1, Math.min(w, h) * .42, '#d9c2d3');
+}
+function drawPainting(cx, y, maxW, maxH, shown, newest = -1) {
+  const { w, h } = paintingSize(maxW, maxH), x = cx - w / 2;
+  const img = art().img, ok = img.complete && img.naturalWidth;
+  ctx.fillStyle = 'rgba(150,100,60,.2)'; rr(x - 11, y - 7, w + 22, h + 22, 6); ctx.fill();
+  const g = ctx.createLinearGradient(0, y - 10, 0, y + h + 10);
+  g.addColorStop(0, '#f2c766'); g.addColorStop(1, '#c98f2e');
+  ctx.fillStyle = g; rr(x - 11, y - 11, w + 22, h + 22, 6); ctx.fill();
+  ctx.strokeStyle = '#a8742a'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#fff8e6'; ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+  const tw = w / 5, th = h / 2, anim = Math.max(0, Math.min(1, (time - clearAt - .35) / .7));
+  for (let i = 0; i < ROUNDS; i++) {
+    const c = i % 5, r = (i / 5) | 0, dx = x + c * tw, dy = y + r * th;
+    if (!shown.includes(i) || !ok) { placeholder(dx, dy, tw, th, i); continue; }
+    const al = i === newest ? anim : 1;
+    if (al < 1) placeholder(dx, dy, tw, th, i);
+    ctx.save(); ctx.globalAlpha = al;
+    ctx.translate(dx + tw / 2, dy + th / 2); ctx.scale(1 + (1 - al) * .35, 1 + (1 - al) * .35);
+    ctx.drawImage(img, c * img.naturalWidth / 5, r * img.naturalHeight / 2, img.naturalWidth / 5, img.naturalHeight / 2,
+      -tw / 2, -th / 2, tw + .5, th + .5);
+    ctx.restore();
+  }
+  if (newest >= 0 && anim > 0 && shown.length < ROUNDS) {
+    const c = newest % 5, r = (newest / 5) | 0;
+    ctx.strokeStyle = `rgba(255,120,160,${.6 + Math.sin(time * 6) * .4})`; ctx.lineWidth = 3;
+    ctx.strokeRect(x + c * tw + 1.5, y + r * th + 1.5, tw - 3, th - 3);
+  }
+  return y + h + 11;
+}
+function card(y, h) {
+  ctx.fillStyle = 'rgba(255,240,246,.6)'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,.95)'; rr(26, y, W - 52, h, 28); ctx.fill();
   ctx.strokeStyle = '#ffc2d6'; ctx.lineWidth = 3; ctx.stroke();
 }
-function button(label, y) {
-  const pulse = 1 + Math.sin(time * 4) * .03;
-  ctx.save(); ctx.translate(W / 2, y); ctx.scale(pulse, pulse);
-  ctx.fillStyle = '#e8739a'; rr(-90, -22 + 4, 180, 44, 22); ctx.fill();
-  ctx.fillStyle = '#ff97bb'; rr(-90, -22, 180, 44, 22); ctx.fill();
-  text(label, 0, 1, 22, '#fff');
+function button(label, y, act, { x = W / 2, w = 190, alt = false } = {}) {
+  const pulse = alt ? 1 : 1 + Math.sin(time * 4) * .03;
+  ctx.save(); ctx.translate(x, y); ctx.scale(pulse, pulse);
+  ctx.fillStyle = alt ? '#d9c7e8' : '#e8739a'; rr(-w / 2, -18, w, 44, 22); ctx.fill();
+  ctx.fillStyle = alt ? '#efe4f8' : '#ff97bb'; rr(-w / 2, -22, w, 44, 22); ctx.fill();
+  text(label, 0, 1, 20, alt ? '#8a63db' : '#fff');
   ctx.restore();
+  btns.push({ x: x - w / 2, y: y - 22, w, h: 44, act });
 }
 function drawOverlay() {
-  const cy = H / 2;
+  btns = [];
+  const shownSoFar = order.slice(0, level);
   if (state === 'title') {
     ctx.fillStyle = 'rgba(255,240,246,.4)'; ctx.fillRect(0, 0, W, H);
-    const bob = Math.sin(time * 3) * 6;
-    const cols = ['a', 'c', 'd', 'e', 'f'];
-    cols.forEach((c, i) => {
-      const k = { x: 52 + i * 78, y: 170 + Math.sin(time * 3 + i) * 8, w: 64, h: 32, col: COLORS[c], hp: i === 2 ? 2 : 1,
-        wob: 0, blink: (time + i * .7) % 4 };
-      drawBrick(k);
-    });
-    text('말랑말랑', W / 2, 262 + bob, 46, '#ff7aa2', 'center', '#fff');
-    text('벽돌깨기', W / 2, 318 + bob, 58, '#9a7ce6', 'center', '#fff');
-    button('▶ 시작하기', 420);
-    text('마우스·터치로 움직이고, 탭하면 발사!', W / 2, 490, 17, '#7a5a6a');
-    text('← → 이동 · 스페이스 발사 · P 일시정지 · M 소리', W / 2, 518, 14, '#a08898');
-    text('하얀 크림 벽돌은 두 번 맞아야 깨져요', W / 2, 546, 14, '#a08898');
-    if (best) text(`최고 점수 ★ ${best}`, W / 2, 590, 18, '#e8a33a');
+    const bob = Math.sin(time * 3) * 5;
+    ['a', 'b', 'c', 'e', 'f'].forEach((c, i) => drawBrick({ x: 32 + i * 86, y: 92 + Math.sin(time * 3 + i) * 7, w: 72, h: 32,
+      col: COLORS[c], hp: i === 2 ? 2 : 1, wob: 0, blink: (time + i * .7) % 4 }));
+    text('말랑말랑', W / 2, 178 + bob, 40, '#ff7aa2', 'center', '#fff');
+    text('명화 벽돌깨기', W / 2, 228 + bob, 50, '#8a63db', 'center', '#fff');
+    const bottom = drawPainting(W / 2, 285, 190, 120, []);
+    text('10라운드를 모두 깨면 숨은 명화가 완성돼요!', W / 2, bottom + 26, 17, '#7a5a6a');
+    button('▶ 시작하기', bottom + 82, startGame);
+    text('마우스·터치로 팔레트를 움직이고, 탭하면 붓 발사!', W / 2, bottom + 140, 15, '#7a5a6a');
+    text('← → 이동 · 스페이스 발사 · P 일시정지 · M 소리', W / 2, bottom + 165, 14, '#a08898');
+    text('반짝이는 금색 뚜껑 물감은 두 번 맞아야 터져요', W / 2, bottom + 190, 14, '#a08898');
+    if (best) text(`최고 점수 ★ ${best}`, W / 2, bottom + 228, 17, '#e8a33a');
   } else if (state === 'play') {
     if (balls.some(b => b.stuck)) {
       ctx.globalAlpha = .6 + Math.sin(time * 5) * .4;
-      text('탭하거나 스페이스로 발사!', W / 2, paddle.y + 46, 18, '#e8739a', 'center', '#fff');
+      text('탭하거나 스페이스로 붓 발사!', W / 2, paddle.y + 46, 18, '#e8739a', 'center', '#fff');
       ctx.globalAlpha = 1;
     }
   } else if (state === 'pause') {
-    card(200);
-    text('잠깐 쉬는 중 zZ', W / 2, cy - 40, 30, '#9a7ce6');
-    button('계속하기', cy + 40);
+    card(170, 380);
+    text('잠깐 쉬는 중 zZ', W / 2, 215, 30, '#8a63db');
+    const bottom = drawPainting(W / 2, 255, 260, 160, shownSoFar);
+    text(`모은 명화 조각 ${shownSoFar.length}/${ROUNDS}`, W / 2, bottom + 22, 16, '#7a5a6a');
+    button('계속하기', bottom + 72, () => { state = 'play'; });
   } else if (state === 'clear') {
-    card(240);
-    text(`레벨 ${level + 1} 클리어!`, W / 2, cy - 60, 34, '#ff7aa2');
-    text(`점수 ★ ${score}`, W / 2, cy - 15, 20, '#7a5a6a');
-    button(level + 1 >= LEVELS.length ? '마지막 결과 보기' : '다음 레벨 ▶', cy + 60);
+    const shown = order.slice(0, level + 1);
+    card(50, 620);
+    text(`라운드 ${level + 1} 클리어!`, W / 2, 95, 32, '#ff7aa2');
+    text(`명화 조각 ${shown.length}/${ROUNDS} 획득 · 보너스 +100`, W / 2, 132, 16, '#7a5a6a');
+    let y = drawPainting(W / 2, 168, 360, 250, shown, order[level]) + 26;
+    const hintNo = [2, 5, 8].indexOf(level);
+    if (hintNo >= 0) {
+      ctx.fillStyle = '#fff4d6'; rr(56, y - 6, W - 112, 76, 16); ctx.fill();
+      text(`💡 힌트 ${hintNo + 1}`, W / 2, y + 14, 17, '#d68a1c');
+      wrap(art().hints[hintNo], W - 150, 15).forEach((l, i) => text(l, W / 2, y + 38 + i * 20, 15, '#7a5a6a'));
+      y += 90;
+    } else {
+      text('어떤 작품일까요? 조각을 더 모아 보세요!', W / 2, y + 12, 16, '#8a63db');
+      y += 42;
+    }
+    text(`점수 ★ ${score}`, W / 2, y + 8, 19, '#7a5a6a');
+    button(level + 2 === ROUNDS ? '마지막 라운드 ▶' : '다음 라운드 ▶', Math.max(y + 60, 610), nextLevel);
   } else if (state === 'over') {
-    card(280);
-    text('앗, 아쉬워요 ㅠㅠ', W / 2, cy - 85, 32, '#9a7ce6');
-    text(`점수 ★ ${score}`, W / 2, cy - 35, 24, '#7a5a6a');
-    text(`최고 점수 ${best}`, W / 2, cy, 17, '#e8a33a');
-    button('다시 하기', cy + 75);
+    card(110, 500);
+    text('앗, 아쉬워요 ㅠㅠ', W / 2, 155, 32, '#8a63db');
+    text(`라운드 ${level + 1}에서 멈췄어요 · 점수 ★ ${score}`, W / 2, 192, 16, '#7a5a6a');
+    const bottom = drawPainting(W / 2, 232, 280, 170, shownSoFar);
+    text(`모은 명화 조각 ${shownSoFar.length}/${ROUNDS} · 최고 점수 ${best}`, W / 2, bottom + 24, 15, '#a08898');
+    button('이 라운드 다시', bottom + 78, retryLevel);
+    button('처음부터', bottom + 134, startGame, { alt: true, w: 150 });
   } else if (state === 'win') {
-    card(300);
-    text('모두 깼어요!', W / 2, cy - 95, 38, '#ff7aa2');
-    text('벽돌 친구들이 놀라서 도망갔어요 ♥', W / 2, cy - 50, 16, '#9a7ce6');
-    text(`최종 점수 ★ ${score}`, W / 2, cy - 5, 24, '#7a5a6a');
-    text(`최고 점수 ${best}`, W / 2, cy + 28, 17, '#e8a33a');
-    button('처음부터 다시', cy + 90);
+    const a = art();
+    card(20, 680);
+    text('명화 완성!', W / 2, 58, 34, '#ff7aa2', 'center', '#fff');
+    let y = drawPainting(W / 2, 98, 390, 270, order, order[ROUNDS - 1]) + 30;
+    text(`「${a.title}」`, W / 2, y, a.title.length > 12 ? 22 : 26, '#5a3a4a');
+    text(a.en, W / 2, y + 26, 14, '#a08898');
+    text(`${a.artist} · ${a.year}`, W / 2, y + 52, 18, '#8a63db');
+    text(a.place, W / 2, y + 76, 14, '#a08898');
+    y += 104;
+    wrap(a.desc, W - 110, 15).forEach((l, i) => text(l, W / 2, y + i * 21, 15, '#6a4a5a'));
+    y += wrap(a.desc, W - 110, 15).length * 21 + 10;
+    text(`최종 점수 ★ ${score}   최고 점수 ${best}`, W / 2, y, 16, '#e8a33a');
+    button('다른 명화 도전!', Math.min(y + 46, 662), startGame);
   }
 }
 function draw() {
@@ -531,16 +703,17 @@ function draw() {
     drawPaddle();
     for (const b of balls) drawBall(b);
   }
-  drawParts();
   ctx.restore();
   if (state !== 'title') drawHud();
   drawOverlay();
+  drawParts();
 }
 
 // ---------- input ----------
 function action() {
   initAudio();
-  if (state === 'title' || state === 'over' || state === 'win') startGame();
+  if (state === 'title' || state === 'win') startGame();
+  else if (state === 'over') retryLevel();
   else if (state === 'play') launch();
   else if (state === 'pause') state = 'play';
   else if (state === 'clear') nextLevel();
@@ -558,10 +731,11 @@ cv.addEventListener('pointerdown', e => {
   e.preventDefault();
   initAudio();
   const p = toCanvas(e);
-  if (state !== 'title') {
+  if (state === 'play' || state === 'pause') {
     if (Math.hypot(p.x - BTN.mute.x, p.y - BTN.mute.y) < 18) { muted = !muted; return; }
     if (Math.hypot(p.x - BTN.pause.x, p.y - BTN.pause.y) < 18) { togglePause(); return; }
   }
+  for (const b of btns) if (p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) { b.act(); return; }
   if (state === 'play') tx = p.x;
   action();
 });
